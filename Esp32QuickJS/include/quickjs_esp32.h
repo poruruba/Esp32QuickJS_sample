@@ -370,7 +370,7 @@ class ESP32QuickJS {
                                func : {1, JS_CFUNC_generic, esp32_lcd_setBrigthness}
                              }},
         JSCFunctionListEntry{"setTextColor", 0, JS_DEF_CFUNC, 0, {
-                               func : {1, JS_CFUNC_generic, esp32_lcd_setTextColor}
+                               func : {2, JS_CFUNC_generic, esp32_lcd_setTextColor}
                              }},
         JSCFunctionListEntry{"setTextSize", 0, JS_DEF_CFUNC, 0, {
                                func : {1, JS_CFUNC_generic, esp32_lcd_setTextSize}
@@ -679,9 +679,11 @@ class ESP32QuickJS {
 
   static JSValue esp32_lcd_setTextColor(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value;
-    JS_ToUint32(ctx, &value, argv[0]);
-    M5Lite.Lcd.setTextColor(value);
+    uint32_t value0;
+    uint32_t value1;
+    JS_ToUint32(ctx, &value0, argv[0]);
+    JS_ToUint32(ctx, &value1, argv[1]);
+    M5Lite.Lcd.setTextSize(value0, value1);
     return JS_UNDEFINED;
   }
 
