@@ -3,11 +3,11 @@
 #include <HTTPClient.h>
 #include "quickjs_esp32.h"
 
-//#define LOCAL_JAVASCRIPT  // ROM‚É–„‚ß‚Şê‡‚É‚ÍƒRƒƒ“ƒgƒAƒEƒg‚ğŠO‚·
+//#define LOCAL_JAVASCRIPT  // ROMã«åŸ‹ã‚è¾¼ã‚€å ´åˆã«ã¯ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆã‚’å¤–ã™
 
-const char *wifi_ssid = "yWiFiƒAƒNƒZƒXƒ|ƒCƒ“ƒg‚ÌSSIDz";
-const char *wifi_password = "yWiFiƒAƒNƒZƒXƒ|ƒCƒ“ƒg‚ÌƒpƒXƒ[ƒh";
-const char *jscode_url = "yJavascript‚Ìæ“¾æURLz";
+const char *wifi_ssid = "ã€WiFiã‚¢ã‚¯ã‚»ã‚¹ãƒã‚¤ãƒ³ãƒˆã®SSIDã€‘";
+const char *wifi_password = "ã€WiFiã‚¢ã‚¯ã‚»ã‚¹ãƒã‚¤ãƒ³ãƒˆã®ãƒ‘ã‚¹ãƒ¯ãƒ¼ãƒ‰";
+const char *jscode_url = "ã€Javascriptã®å–å¾—å…ˆURLã€‘";
 
 // see platformio.ini
 #ifdef LOCAL_JAVASCRIPT
@@ -46,7 +46,7 @@ void setup() {
   long ret;
   ret = doHttpGet(jscode_url, (uint8_t*)jscode, &jscode_len);
   if( ret == 0 ){
-    jscode[jscode_len] = '\n';
+    jscode[jscode_len] = '\0';
 
     qjs.begin();
     qjs.exec(jscode);
