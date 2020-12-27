@@ -683,7 +683,7 @@ class ESP32QuickJS {
     uint32_t value1;
     JS_ToUint32(ctx, &value0, argv[0]);
     JS_ToUint32(ctx, &value1, argv[1]);
-    M5Lite.Lcd.setTextSize(value0, value1);
+    M5Lite.Lcd.setTextColor(value0, value1);
     return JS_UNDEFINED;
   }
 
