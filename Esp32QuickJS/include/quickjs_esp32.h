@@ -451,10 +451,10 @@ class ESP32QuickJS {
                                func : {2, JS_CFUNC_generic, esp32_lcd_setCursor}
                              }},
         JSCFunctionListEntry{"print", 0, JS_DEF_CFUNC, 0, {
-                               func : {1, JS_CFUNC_generic, esp32_lcd_print}
+                               func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_lcd_print }}
                              }},
-        JSCFunctionListEntry{"println", 0, JS_DEF_CFUNC, 0, {
-                               func : {1, JS_CFUNC_generic, esp32_lcd_println}
+        JSCFunctionListEntry{"println", 0, JS_DEF_CFUNC, 1, {
+                               func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_lcd_print }}
                              }},
         JSCFunctionListEntry{"getWidth", 0, JS_DEF_CFUNC, 0, {
                                func : {0, JS_CFUNC_generic, esp32_lcd_getWidth}
@@ -795,17 +795,17 @@ class ESP32QuickJS {
   }
 
   static JSValue esp32_lcd_print(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
+                                          int argc, JSValueConst *argv, int magic) {
     const char *text = JS_ToCString(ctx, argv[0]);
-    M5Lite.Lcd.print(text);
-    JS_FreeCString(ctx, text);
-    return JS_UNDEFINED;
-  }
+    if( magic == 0 ){
+      M5Lite.Lcd.print(text);
+    }else if( magic == 1 ){
+      M5Lite.Lcd.println(text);
+    }else{
+      JS_FreeCString(ctx, text);
+      return JS_EXCEPTION;
+    }
 
-  static JSValue esp32_lcd_println(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
-    const char *text = JS_ToCString(ctx, argv[0]);
-    M5Lite.Lcd.println(text);
     JS_FreeCString(ctx, text);
     return JS_UNDEFINED;
   }
