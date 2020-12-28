@@ -1,11 +1,14 @@
 #pragma once
 
+#define JSDOCUMENT_BUFFER_SIZE  2048
+
 #if defined(WiFi_h) && !defined(ENABLE_WIFI)
 //#define ENABLE_WIFI
 #endif
 
 //#include <Arduino.h>
 #include "M5Lite.h"
+#include <ArduinoJson.h>
 
 #include <algorithm>
 #include <vector>
@@ -483,6 +486,12 @@ class ESP32QuickJS {
         JSCFunctionListEntry{"setLoop", 0, JS_DEF_CFUNC, 0, {
                                func : {1, JS_CFUNC_generic, esp32_set_loop}
                              }},
+        JSCFunctionListEntry{"jsonParse", 0, JS_DEF_CFUNC, 0, {
+                               func : {1, JS_CFUNC_generic, esp32_json_parse}
+                             }},
+        JSCFunctionListEntry{"jsonPost", 0, JS_DEF_CFUNC, 0, {
+                               func : {2, JS_CFUNC_generic, esp32_json_post}
+                             }},
 #ifdef ENABLE_WIFI
         JSCFunctionListEntry{"isWifiConnected", 0, JS_DEF_CFUNC, 0, {
                                func : {0, JS_CFUNC_generic, wifi_is_connected}
@@ -664,6 +673,64 @@ class ESP32QuickJS {
     JS_ToUint32(ctx, &address, argv[0]);
     JS_ToUint32(ctx, &count, argv[1]);
     return JS_NewUint32(ctx, wire->requestFrom((uint8_t)address, (uint8_t)count));
+  }
+
+  static JSValue jsonObject2JSValue(JSContext *ctx, JsonObject obj){
+    JSValue jsObject = JS_NewObject(ctx);
+    for( JsonPair p : obj ){
+      if( p.value().is<char*>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewString(ctx, p.value().as<char*>()));
+      }else
+      if( p.value().is<bool>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewBool(ctx, p.value().as<bool>()));
+      }else
+      if( p.value().is<int>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewInt32(ctx, p.value().as<int>()));
+      }else
+      if( p.value().is<float>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewFloat64(ctx, p.value().as<float>()));
+      }else
+      if( p.value().is<JsonArray>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), jsonArray2JSValue(ctx, p.value().as<JsonArray>()));
+      }else
+      if( p.value().is<JsonObject>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), jsonObject2JSValue(ctx, p.value().as<JsonObject>()));
+      }else{
+        return JS_EXCEPTION;
+      }
+    }
+
+    return jsObject;
+  }
+
+  static JSValue jsonArray2JSValue(JSContext *ctx, JsonArray array){
+    JSValue jsArray = JS_NewArray(ctx);
+    int size = array.size();
+    for( int i = 0 ; i < size ; i++ ){
+      JsonVariant item = array[i];
+      if( item.is<char*>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewString(ctx, item.as<char*>()));
+      }else
+      if( item.is<bool>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewBool(ctx, item.as<bool>()));
+      }else
+      if( item.is<int>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewInt32(ctx, item.as<int>()));
+      }else
+      if( item.is<float>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewFloat64(ctx, item.as<float>()));
+      }else
+      if( item.is<JsonArray>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, jsonArray2JSValue(ctx, item.as<JsonArray>()));
+      }else
+      if( item.is<JsonObject>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, jsonObject2JSValue(ctx, item.as<JsonObject>()));
+      }else{
+        return JS_EXCEPTION;
+      }
+    }
+
+    return jsArray;
   }
 
   static JSValue esp32_wire_beginTransmission(JSContext *ctx, JSValueConst jsThis,
@@ -896,6 +963,82 @@ class ESP32QuickJS {
     ESP32QuickJS *qjs = (ESP32QuickJS *)JS_GetContextOpaque(ctx);
     qjs->setLoopFunc(JS_DupValue(ctx, argv[0]));
     return JS_UNDEFINED;
+  }
+
+  static JSValue esp32_json_parse(JSContext *ctx, JSValueConst jsThis, int argc,
+                                  JSValueConst *argv) {
+    const char *text = JS_ToCString(ctx, argv[0]);
+
+    DynamicJsonDocument doc(JSDOCUMENT_BUFFER_SIZE);
+    DeserializationError err = deserializeJson(doc, text);
+    if( err ){
+      JS_FreeCString(ctx, text);
+      return JS_EXCEPTION;
+    }
+    Serial.print("memoryUsage: ");
+    Serial.println(doc.memoryUsage());
+    
+    if( doc.is<JsonObject>() ){
+      JsonObject obj = doc.as<JsonObject>();
+      JSValue value = jsonObject2JSValue(ctx, obj);
+      JS_FreeCString(ctx, text);
+      return value;
+    }else if( doc.is<JsonArray>() ){
+      JsonArray array = doc.as<JsonArray>();
+      JSValue value = jsonArray2JSValue(ctx, array);
+      JS_FreeCString(ctx, text);
+      return value;
+    }else{
+      JS_FreeCString(ctx, text);
+      return JS_EXCEPTION;
+    }
+  }
+
+  static JSValue esp32_json_post(JSContext *ctx, JSValueConst jsThis, int argc,
+                                  JSValueConst *argv) {
+    const char *url = JS_ToCString(ctx, argv[0]);
+    const char *body = JS_ToCString(ctx, argv[1]);
+
+    HTTPClient http;
+    if( strncmp(url, "https", 5) == 0 )
+      http.begin(espClientSecure, url); //HTTPS
+    else
+      http.begin(espClient, url); //HTTP
+    http.addHeader("Content-Type", "application/json");
+    int status_code = http.POST((uint8_t*)body, strlen(body));
+    
+    JSValue value = JS_EXCEPTION;
+    if( status_code == 200 ){
+      Stream* resp = http.getStreamPtr();
+
+      DynamicJsonDocument doc(JSDOCUMENT_BUFFER_SIZE);
+      DeserializationError err = deserializeJson(doc, *resp);
+      if( err )
+        goto end;
+
+      Serial.print("memoryUsage: ");
+      Serial.println(doc.memoryUsage());
+
+      if( doc.is<JsonObject>() ){
+        JsonObject obj = doc.as<JsonObject>();
+        value = jsonObject2JSValue(ctx, obj);
+        goto end;
+      }else if( doc.is<JsonArray>() ){
+        JsonArray array = doc.as<JsonArray>();
+        value = jsonArray2JSValue(ctx, array);
+        goto end;
+      }else{
+        goto end;
+      }
+    }else{
+        goto end;
+    }
+    
+end:
+    http.end();
+    JS_FreeCString(ctx, url);
+    JS_FreeCString(ctx, body);
+    return value;
   }
 
 #ifdef ENABLE_WIFI
