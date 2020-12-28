@@ -974,6 +974,8 @@ class ESP32QuickJS {
     DeserializationError err = deserializeJson(doc, text);
     if( err ){
       JS_FreeCString(ctx, text);
+      Serial.println("Deserialize error");
+      Serial.println(err.c_str());
       return JS_EXCEPTION;
     }
     Serial.print("memoryUsage: ");
@@ -1014,9 +1016,11 @@ class ESP32QuickJS {
 
       DynamicJsonDocument doc(JSDOCUMENT_BUFFER_SIZE);
       DeserializationError err = deserializeJson(doc, *resp);
-      if( err )
+      if( err ){
+        Serial.println("Deserialize error");
+        Serial.println(err.c_str());
         goto end;
-
+      }      
       Serial.print("memoryUsage: ");
       Serial.println(doc.memoryUsage());
 
