@@ -326,6 +326,46 @@ class ESP32QuickJS {
             "digitalWrite", 0, JS_DEF_CFUNC, 0, {
               func : {2, JS_CFUNC_generic, esp32_gpio_digital_write}
             }},
+        JSCFunctionListEntry{
+            "LOW", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x0
+            }},
+        JSCFunctionListEntry{
+            "HIGH", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x1
+            }},
+        JSCFunctionListEntry{
+            "INPUT", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x01
+            }},
+        JSCFunctionListEntry{
+            "OUTPUT", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x02
+            }},
+        JSCFunctionListEntry{
+            "PULLUP", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x04
+            }},
+        JSCFunctionListEntry{
+            "INPUT_PULLUP", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x05
+            }},
+        JSCFunctionListEntry{
+            "PULLDOWN", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x08
+            }},
+        JSCFunctionListEntry{
+            "INPUT_PULLDOWN", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x09
+            }},
+        JSCFunctionListEntry{
+            "OPEN_DRAIN", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x10
+            }},
+        JSCFunctionListEntry{
+            "OUTPUT_OPEN_DRAIN", 0, JS_DEF_PROP_INT32, 0, {
+              i32: 0x12
+            }},
     };
 
     static const JSCFunctionListEntry wire_funcs[] = {
@@ -342,15 +382,11 @@ class ESP32QuickJS {
             }},
         JSCFunctionListEntry{
             "endTransmission", 0, JS_DEF_CFUNC, 0, {
-              func : {0, JS_CFUNC_generic, esp32_wire_endTransmission}
+              func : {1, JS_CFUNC_generic, esp32_wire_endTransmission}
             }},
         JSCFunctionListEntry{
             "write", 0, JS_DEF_CFUNC, 0, {
               func : {1, JS_CFUNC_generic, esp32_wire_write}
-            }},
-        JSCFunctionListEntry{
-            "write_buf", 0, JS_DEF_CFUNC, 0, {
-              func : {1, JS_CFUNC_generic, esp32_wire_write_buf}
             }},
         JSCFunctionListEntry{
             "available", 0, JS_DEF_CFUNC, 0, {
@@ -408,17 +444,6 @@ class ESP32QuickJS {
         JSCFunctionListEntry{"millis", 0, JS_DEF_CFUNC, 0, {
                                func : {0, JS_CFUNC_generic, esp32_millis}
                              }},
-        JSCFunctionListEntry{"pinMode", 0, JS_DEF_CFUNC, 0, {
-                               func : {2, JS_CFUNC_generic, esp32_gpio_mode}
-                             }},
-        JSCFunctionListEntry{
-            "digitalRead", 0, JS_DEF_CFUNC, 0, {
-              func : {1, JS_CFUNC_generic, esp32_gpio_digital_read}
-            }},
-        JSCFunctionListEntry{
-            "digitalWrite", 0, JS_DEF_CFUNC, 0, {
-              func : {2, JS_CFUNC_generic, esp32_gpio_digital_write}
-            }},
         JSCFunctionListEntry{"deepSleep", 0, JS_DEF_CFUNC, 0, {
                                func : {1, JS_CFUNC_generic, esp32_deep_sleep}
                              }},
@@ -453,16 +478,6 @@ class ESP32QuickJS {
 
     JSModuleDef *m2 =
         JS_NewCModule(ctx, "gpio", [](JSContext *ctx, JSModuleDef *m) {
-          JS_SetModuleExport( ctx, m, "LOW", JS_NewUint32(ctx, 0x0) );
-          JS_SetModuleExport( ctx, m, "HIGH", JS_NewUint32(ctx, 0x1) );
-          JS_SetModuleExport( ctx, m, "INPUT", JS_NewUint32(ctx, 0x01) );
-          JS_SetModuleExport( ctx, m, "OUTPUT", JS_NewUint32(ctx, 0x02) );
-          JS_SetModuleExport( ctx, m, "PULLUP", JS_NewUint32(ctx, 0x04) );
-          JS_SetModuleExport( ctx, m, "INPUT_PULLUP", JS_NewUint32(ctx, 0x05) );
-          JS_SetModuleExport( ctx, m, "PULLDOWN", JS_NewUint32(ctx, 0x08) );
-          JS_SetModuleExport( ctx, m, "INPUT_PULLDOWN", JS_NewUint32(ctx, 0x09) );
-          JS_SetModuleExport( ctx, m, "OPEN_DRAIN", JS_NewUint32(ctx, 0x10) );
-          JS_SetModuleExport( ctx, m, "OUTPUT_OPEN_DRAIN", JS_NewUint32(ctx, 0x12) );
           return JS_SetModuleExportList(
               ctx, m, gpio_funcs,
               sizeof(gpio_funcs) / sizeof(JSCFunctionListEntry));
@@ -471,16 +486,6 @@ class ESP32QuickJS {
       JS_AddModuleExportList(
           ctx, m2, gpio_funcs,
           sizeof(gpio_funcs) / sizeof(JSCFunctionListEntry));
-      JS_AddModuleExport( ctx, m2, "LOW");
-      JS_AddModuleExport( ctx, m2, "HIGH");
-      JS_AddModuleExport( ctx, m2, "INPUT");
-      JS_AddModuleExport( ctx, m2, "OUTPUT");
-      JS_AddModuleExport( ctx, m2, "PULLUP");
-      JS_AddModuleExport( ctx, m2, "INPUT_PULLUP");
-      JS_AddModuleExport( ctx, m2, "PULLDOWN");
-      JS_AddModuleExport( ctx, m2, "INPUT_PULLDOWN");
-      JS_AddModuleExport( ctx, m2, "OPEN_DRAIN");
-      JS_AddModuleExport( ctx, m2, "OUTPUT_OPEN_DRAIN");
     }
 
     JSModuleDef *m3 =
@@ -619,25 +624,28 @@ class ESP32QuickJS {
 
   static JSValue esp32_wire_endTransmission(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    return JS_NewUint32(ctx, Wire.endTransmission());
+    bool sendStop = true;
+    if( argc > 0 )
+      sendStop = JS_ToBool(ctx, argv[0]);
+    return JS_NewUint32(ctx, Wire.endTransmission(sendStop));
   }
 
   static JSValue esp32_wire_write(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value;
-    JS_ToUint32(ctx, &value, argv[0]);
-    return JS_NewUint32(ctx, Wire.write((uint8_t)value));
-  }
-
-  static JSValue esp32_wire_write_buf(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
-    size_t size = 0;
-    uint8_t *buf = JS_GetArrayBuffer(ctx, &size, argv[0]);
-    for( size_t i = 0 ; i < size ; i++ ){
-      if( Wire.write(buf[i]) != 1 )
-        return JS_EXCEPTION;
+    int tag = JS_VALUE_GET_TAG(argv[0]);
+    if( tag == JS_TAG_INT ){
+      uint32_t value;
+      JS_ToUint32(ctx, &value, argv[0]);
+      return JS_NewUint32(ctx, Wire.write((uint8_t)value));
+    }else{
+      size_t size = 0;
+      uint8_t *buf = JS_GetArrayBuffer(ctx, &size, argv[0]);
+      for( size_t i = 0 ; i < size ; i++ ){
+        if( Wire.write(buf[i]) != 1 )
+          return JS_EXCEPTION;
+      }
+      return JS_NewUint32(ctx, size); 
     }
-    return JS_NewUint32(ctx, size); 
   }
 
   static JSValue esp32_wire_available(JSContext *ctx, JSValueConst jsThis,
@@ -679,8 +687,7 @@ class ESP32QuickJS {
 
   static JSValue esp32_lcd_setTextColor(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value0;
-    uint32_t value1;
+    uint32_t value0, value1;
     JS_ToUint32(ctx, &value0, argv[0]);
     JS_ToUint32(ctx, &value1, argv[1]);
     M5Lite.Lcd.setTextColor(value0, value1);
@@ -699,6 +706,7 @@ class ESP32QuickJS {
                                           int argc, JSValueConst *argv) {
     const char *text = JS_ToCString(ctx, argv[0]);
     M5Lite.Lcd.print(text);
+    JS_FreeCString(ctx, text);
     return JS_UNDEFINED;
   }
 
@@ -706,6 +714,7 @@ class ESP32QuickJS {
                                           int argc, JSValueConst *argv) {
     const char *text = JS_ToCString(ctx, argv[0]);
     M5Lite.Lcd.println(text);
+    JS_FreeCString(ctx, text);
     return JS_UNDEFINED;
   }
 
