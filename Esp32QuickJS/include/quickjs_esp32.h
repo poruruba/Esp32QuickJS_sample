@@ -288,6 +288,65 @@ class ESP32QuickJS {
   }
 
  protected:
+ 
+  static JSValue jsonObject2JSValue(JSContext *ctx, JsonObject obj){
+    JSValue jsObject = JS_NewObject(ctx);
+    for( JsonPair p : obj ){
+      if( p.value().is<char*>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewString(ctx, p.value().as<char*>()));
+      }else
+      if( p.value().is<bool>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewBool(ctx, p.value().as<bool>()));
+      }else
+      if( p.value().is<int>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewInt32(ctx, p.value().as<int>()));
+      }else
+      if( p.value().is<float>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewFloat64(ctx, p.value().as<float>()));
+      }else
+      if( p.value().is<JsonArray>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), jsonArray2JSValue(ctx, p.value().as<JsonArray>()));
+      }else
+      if( p.value().is<JsonObject>() ){
+        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), jsonObject2JSValue(ctx, p.value().as<JsonObject>()));
+      }else{
+        return JS_EXCEPTION;
+      }
+    }
+
+    return jsObject;
+  }
+
+  static JSValue jsonArray2JSValue(JSContext *ctx, JsonArray array){
+    JSValue jsArray = JS_NewArray(ctx);
+    int size = array.size();
+    for( int i = 0 ; i < size ; i++ ){
+      JsonVariant item = array[i];
+      if( item.is<char*>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewString(ctx, item.as<char*>()));
+      }else
+      if( item.is<bool>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewBool(ctx, item.as<bool>()));
+      }else
+      if( item.is<int>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewInt32(ctx, item.as<int>()));
+      }else
+      if( item.is<float>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewFloat64(ctx, item.as<float>()));
+      }else
+      if( item.is<JsonArray>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, jsonArray2JSValue(ctx, item.as<JsonArray>()));
+      }else
+      if( item.is<JsonObject>() ){
+        JS_SetPropertyUint32(ctx, jsArray, i, jsonObject2JSValue(ctx, item.as<JsonObject>()));
+      }else{
+        return JS_EXCEPTION;
+      }
+    }
+
+    return jsArray;
+  }
+
   void setLoopFunc(JSValue f) {
     JS_FreeValue(ctx, loop_func);
     loop_func = f;
@@ -673,64 +732,6 @@ class ESP32QuickJS {
     JS_ToUint32(ctx, &address, argv[0]);
     JS_ToUint32(ctx, &count, argv[1]);
     return JS_NewUint32(ctx, wire->requestFrom((uint8_t)address, (uint8_t)count));
-  }
-
-  static JSValue jsonObject2JSValue(JSContext *ctx, JsonObject obj){
-    JSValue jsObject = JS_NewObject(ctx);
-    for( JsonPair p : obj ){
-      if( p.value().is<char*>() ){
-        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewString(ctx, p.value().as<char*>()));
-      }else
-      if( p.value().is<bool>() ){
-        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewBool(ctx, p.value().as<bool>()));
-      }else
-      if( p.value().is<int>() ){
-        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewInt32(ctx, p.value().as<int>()));
-      }else
-      if( p.value().is<float>() ){
-        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), JS_NewFloat64(ctx, p.value().as<float>()));
-      }else
-      if( p.value().is<JsonArray>() ){
-        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), jsonArray2JSValue(ctx, p.value().as<JsonArray>()));
-      }else
-      if( p.value().is<JsonObject>() ){
-        JS_SetPropertyStr(ctx, jsObject, p.key().c_str(), jsonObject2JSValue(ctx, p.value().as<JsonObject>()));
-      }else{
-        return JS_EXCEPTION;
-      }
-    }
-
-    return jsObject;
-  }
-
-  static JSValue jsonArray2JSValue(JSContext *ctx, JsonArray array){
-    JSValue jsArray = JS_NewArray(ctx);
-    int size = array.size();
-    for( int i = 0 ; i < size ; i++ ){
-      JsonVariant item = array[i];
-      if( item.is<char*>() ){
-        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewString(ctx, item.as<char*>()));
-      }else
-      if( item.is<bool>() ){
-        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewBool(ctx, item.as<bool>()));
-      }else
-      if( item.is<int>() ){
-        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewInt32(ctx, item.as<int>()));
-      }else
-      if( item.is<float>() ){
-        JS_SetPropertyUint32(ctx, jsArray, i, JS_NewFloat64(ctx, item.as<float>()));
-      }else
-      if( item.is<JsonArray>() ){
-        JS_SetPropertyUint32(ctx, jsArray, i, jsonArray2JSValue(ctx, item.as<JsonArray>()));
-      }else
-      if( item.is<JsonObject>() ){
-        JS_SetPropertyUint32(ctx, jsArray, i, jsonObject2JSValue(ctx, item.as<JsonObject>()));
-      }else{
-        return JS_EXCEPTION;
-      }
-    }
-
-    return jsArray;
   }
 
   static JSValue esp32_wire_beginTransmission(JSContext *ctx, JSValueConst jsThis,
