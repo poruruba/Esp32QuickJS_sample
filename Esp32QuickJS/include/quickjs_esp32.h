@@ -714,13 +714,21 @@ class ESP32QuickJS {
       JS_ToUint32(ctx, &value, argv[0]);
       return JS_NewUint32(ctx, wire->write((uint8_t)value));
     }else{
-      size_t size = 0;
-      uint8_t *buf = JS_GetArrayBuffer(ctx, &size, argv[0]);
-      for( size_t i = 0 ; i < size ; i++ ){
-        if( wire->write(buf[i]) != 1 )
+      JSValue jv = JS_GetPropertyStr(ctx, argv[0], "length");
+      uint32_t length;
+      JS_ToUint32(ctx, &length, jv);
+      JS_FreeValue(ctx, jv);
+
+      for( uint32_t i = 0 ; i < length ; i++ ){
+        JSValue jv = JS_GetPropertyUint32(ctx, argv[0], i);
+        uint32_t value;
+        JS_ToUint32(ctx, &value, jv);
+        JS_FreeValue(ctx, jv);
+        if( wire->write(value) != 1 )
           return JS_EXCEPTION;
       }
-      return JS_NewUint32(ctx, size); 
+
+      return JS_NewUint32(ctx, length); 
     }
   }
 
