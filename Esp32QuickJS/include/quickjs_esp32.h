@@ -9,12 +9,12 @@
 //#include <Arduino.h>
 #include "M5Lite.h"
 #include <ArduinoJson.h>
+#include <HTTPClient.h>
 
 #include <algorithm>
 #include <vector>
 
 #ifdef ENABLE_WIFI
-#include <HTTPClient.h>
 #include <StreamString.h>
 #endif
 
