@@ -370,31 +370,61 @@ class ESP32QuickJS {
 
     static const JSCFunctionListEntry wire_funcs[] = {
         JSCFunctionListEntry{"begin", 0, JS_DEF_CFUNC, 0, {
-                               func : {0, JS_CFUNC_generic, esp32_wire_begin}
+                               func : {0, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_begin }}
                              }},
         JSCFunctionListEntry{
             "requestFrom", 0, JS_DEF_CFUNC, 0, {
-              func : {2, JS_CFUNC_generic, esp32_wire_requestFrom}
+              func : {2, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_requestFrom }}
             }},
         JSCFunctionListEntry{
             "beginTransmission", 0, JS_DEF_CFUNC, 0, {
-              func : {1, JS_CFUNC_generic, esp32_wire_beginTransmission}
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_beginTransmission }}
             }},
         JSCFunctionListEntry{
             "endTransmission", 0, JS_DEF_CFUNC, 0, {
-              func : {1, JS_CFUNC_generic, esp32_wire_endTransmission}
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_endTransmission }}
             }},
         JSCFunctionListEntry{
             "write", 0, JS_DEF_CFUNC, 0, {
-              func : {1, JS_CFUNC_generic, esp32_wire_write}
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_write }}
             }},
         JSCFunctionListEntry{
             "available", 0, JS_DEF_CFUNC, 0, {
-              func : {0, JS_CFUNC_generic, esp32_wire_available}
+              func : {0, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_available }}
             }},
         JSCFunctionListEntry{
             "read", 0, JS_DEF_CFUNC, 0, {
-              func : {1, JS_CFUNC_generic, esp32_wire_read}
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_read }}
+            }},
+    };
+
+    static const JSCFunctionListEntry wire1_funcs[] = {
+        JSCFunctionListEntry{"begin", 0, JS_DEF_CFUNC, 1, {
+                               func : {0, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_begin }}
+                             }},
+        JSCFunctionListEntry{
+            "requestFrom", 0, JS_DEF_CFUNC, 1, {
+              func : {2, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_requestFrom }}
+            }},
+        JSCFunctionListEntry{
+            "beginTransmission", 0, JS_DEF_CFUNC, 1, {
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_beginTransmission }}
+            }},
+        JSCFunctionListEntry{
+            "endTransmission", 0, JS_DEF_CFUNC, 1, {
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_endTransmission }}
+            }},
+        JSCFunctionListEntry{
+            "write", 0, JS_DEF_CFUNC, 1, {
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_write }}
+            }},
+        JSCFunctionListEntry{
+            "available", 0, JS_DEF_CFUNC, 1, {
+              func : {0, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_available }}
+            }},
+        JSCFunctionListEntry{
+            "read", 0, JS_DEF_CFUNC, 1, {
+              func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_read }}
             }},
     };
 
@@ -464,51 +494,59 @@ class ESP32QuickJS {
     };
 
 #ifndef GLOBAL_ESP32
-    JSModuleDef *m =
-        JS_NewCModule(ctx, "esp32", [](JSContext *ctx, JSModuleDef *m) {
+    JSModuleDef *mod;
+    mod = JS_NewCModule(ctx, "esp32", [](JSContext *ctx, JSModuleDef *m) {
           return JS_SetModuleExportList(
               ctx, m, esp32_funcs,
               sizeof(esp32_funcs) / sizeof(JSCFunctionListEntry));
         });
-    if (m) {
+    if (mod) {
       JS_AddModuleExportList(
-          ctx, m, esp32_funcs,
+          ctx, mod, esp32_funcs,
           sizeof(esp32_funcs) / sizeof(JSCFunctionListEntry));
     }
 
-    JSModuleDef *m2 =
-        JS_NewCModule(ctx, "gpio", [](JSContext *ctx, JSModuleDef *m) {
+    mod = JS_NewCModule(ctx, "gpio", [](JSContext *ctx, JSModuleDef *m) {
           return JS_SetModuleExportList(
               ctx, m, gpio_funcs,
               sizeof(gpio_funcs) / sizeof(JSCFunctionListEntry));
         });
-    if (m2) {
+    if (mod) {
       JS_AddModuleExportList(
-          ctx, m2, gpio_funcs,
+          ctx, mod, gpio_funcs,
           sizeof(gpio_funcs) / sizeof(JSCFunctionListEntry));
     }
 
-    JSModuleDef *m3 =
-        JS_NewCModule(ctx, "wire", [](JSContext *ctx, JSModuleDef *m) {
+    mod = JS_NewCModule(ctx, "wire", [](JSContext *ctx, JSModuleDef *m) {
           return JS_SetModuleExportList(
               ctx, m, wire_funcs,
               sizeof(wire_funcs) / sizeof(JSCFunctionListEntry));
         });
-    if (m3) {
+    if (mod) {
       JS_AddModuleExportList(
-          ctx, m3, wire_funcs,
+          ctx, mod, wire_funcs,
           sizeof(wire_funcs) / sizeof(JSCFunctionListEntry));
     }
 
-    JSModuleDef *m4 =
-        JS_NewCModule(ctx, "lcd", [](JSContext *ctx, JSModuleDef *m) {
+    mod = JS_NewCModule(ctx, "wire1", [](JSContext *ctx, JSModuleDef *m) {
+          return JS_SetModuleExportList(
+              ctx, m, wire1_funcs,
+              sizeof(wire1_funcs) / sizeof(JSCFunctionListEntry));
+        });
+    if (mod) {
+      JS_AddModuleExportList(
+          ctx, mod, wire1_funcs,
+          sizeof(wire1_funcs) / sizeof(JSCFunctionListEntry));
+    }
+
+    mod = JS_NewCModule(ctx, "lcd", [](JSContext *ctx, JSModuleDef *m) {
           return JS_SetModuleExportList(
               ctx, m, lcd_funcs,
               sizeof(lcd_funcs) / sizeof(JSCFunctionListEntry));
         });
-    if (m4) {
+    if (mod) {
       JS_AddModuleExportList(
-          ctx, m4, lcd_funcs,
+          ctx, mod, lcd_funcs,
           sizeof(lcd_funcs) / sizeof(JSCFunctionListEntry));
     } 
 #else
@@ -600,48 +638,86 @@ class ESP32QuickJS {
   }
 
   static JSValue esp32_wire_begin(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
-    Wire.begin(32, 33);
+                                          int argc, JSValueConst *argv, int magic) {
+    if( magic == 0 )
+      Wire.begin(32, 33);
+    else if( magic == 1 )
+      Wire1.begin(0, 26);
+    else
+      return JS_EXCEPTION;
+
     return JS_UNDEFINED;
   }
 
   static JSValue esp32_wire_requestFrom(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
+                                          int argc, JSValueConst *argv, int magic) {
+    TwoWire *wire;
+    if( magic == 0 )
+      wire = &Wire;
+    else if( magic == 1 )
+      wire = &Wire1;
+    else
+      return JS_EXCEPTION;
+
     uint32_t address;
     uint32_t count;
     JS_ToUint32(ctx, &address, argv[0]);
     JS_ToUint32(ctx, &count, argv[1]);
-    return JS_NewUint32(ctx, Wire.requestFrom((uint8_t)address, (uint8_t)count));
+    return JS_NewUint32(ctx, wire->requestFrom((uint8_t)address, (uint8_t)count));
   }
 
   static JSValue esp32_wire_beginTransmission(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
+                                          int argc, JSValueConst *argv, int magic) {
+    TwoWire *wire;
+    if( magic == 0 )
+      wire = &Wire;
+    else if( magic == 1 )
+      wire = &Wire1;
+    else
+      return JS_EXCEPTION;
+
     uint32_t address;
     JS_ToUint32(ctx, &address, argv[0]);
-    Wire.beginTransmission((uint8_t)address);
+    wire->beginTransmission((uint8_t)address);
     return JS_UNDEFINED;
   }
 
   static JSValue esp32_wire_endTransmission(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
+                                          int argc, JSValueConst *argv, int magic) {
+    TwoWire *wire;
+    if( magic == 0 )
+      wire = &Wire;
+    else if( magic == 1 )
+      wire = &Wire1;
+    else
+      return JS_EXCEPTION;
+    
     bool sendStop = true;
     if( argc > 0 )
       sendStop = JS_ToBool(ctx, argv[0]);
-    return JS_NewUint32(ctx, Wire.endTransmission(sendStop));
+    return JS_NewUint32(ctx, wire->endTransmission(sendStop));
   }
 
   static JSValue esp32_wire_write(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
+                                          int argc, JSValueConst *argv, int magic) {
+    TwoWire *wire;
+    if( magic == 0 )
+      wire = &Wire;
+    else if( magic == 1 )
+      wire = &Wire1;
+    else
+      return JS_EXCEPTION;
+
     int tag = JS_VALUE_GET_TAG(argv[0]);
     if( tag == JS_TAG_INT ){
       uint32_t value;
       JS_ToUint32(ctx, &value, argv[0]);
-      return JS_NewUint32(ctx, Wire.write((uint8_t)value));
+      return JS_NewUint32(ctx, wire->write((uint8_t)value));
     }else{
       size_t size = 0;
       uint8_t *buf = JS_GetArrayBuffer(ctx, &size, argv[0]);
       for( size_t i = 0 ; i < size ; i++ ){
-        if( Wire.write(buf[i]) != 1 )
+        if( wire->write(buf[i]) != 1 )
           return JS_EXCEPTION;
       }
       return JS_NewUint32(ctx, size); 
@@ -649,23 +725,39 @@ class ESP32QuickJS {
   }
 
   static JSValue esp32_wire_available(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
-    return JS_NewUint32(ctx, Wire.available());
+                                          int argc, JSValueConst *argv, int magic) {
+    TwoWire *wire;
+    if( magic == 0 )
+      wire = &Wire;
+    else if( magic == 1 )
+      wire = &Wire1;
+    else
+      return JS_EXCEPTION;
+
+    return JS_NewUint32(ctx, wire->available());
   }
 
   static JSValue esp32_wire_read(JSContext *ctx, JSValueConst jsThis,
-                                          int argc, JSValueConst *argv) {
+                                          int argc, JSValueConst *argv, int magic) {
+    TwoWire *wire;
+    if( magic == 0 )
+      wire = &Wire;
+    else if( magic == 1 )
+      wire = &Wire1;
+    else
+      return JS_EXCEPTION;
+
     if( argc > 0 ){
-        uint32_t value;
-        JS_ToUint32(ctx, &value, argv[0]);
-        JSValue array = JS_NewArray(ctx);
+      uint32_t value;
+      JS_ToUint32(ctx, &value, argv[0]);
+      JSValue array = JS_NewArray(ctx);
       for( uint32_t i = 0 ; i < value ; i++ ){
-        int c = Wire.read();
+        int c = wire->read();
         JS_SetPropertyUint32(ctx, array, i, c);
       }
       return array;
     }else{
-      return JS_NewUint32(ctx, Wire.read());
+      return JS_NewUint32(ctx, wire->read());
     }
   }
 
