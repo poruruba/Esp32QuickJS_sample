@@ -974,7 +974,7 @@ class ESP32QuickJS {
     DeserializationError err = deserializeJson(doc, text);
     if( err ){
       JS_FreeCString(ctx, text);
-      Serial.println("Deserialize error");
+      Serial.print("Deserialize error: ");
       Serial.println(err.c_str());
       return JS_EXCEPTION;
     }
@@ -1017,7 +1017,7 @@ class ESP32QuickJS {
       DynamicJsonDocument doc(JSDOCUMENT_BUFFER_SIZE);
       DeserializationError err = deserializeJson(doc, *resp);
       if( err ){
-        Serial.println("Deserialize error");
+        Serial.print("Deserialize error: ");
         Serial.println(err.c_str());
         goto end;
       }      
