@@ -1,13 +1,16 @@
 #include <WiFi.h>
 #include "M5Lite.h"
 #include <HTTPClient.h>
-#include "quickjs_esp32.h"
 
 //#define LOCAL_JAVASCRIPT  // ROMに埋め込む場合にはコメントアウトを外す
 
 const char *wifi_ssid = "【WiFiアクセスポイントのSSID】";
 const char *wifi_password = "【WiFiアクセスポイントのパスワード";
 const char *jscode_url = "【Javascriptの取得先URL】";
+
+WiFiClient espClient;
+WiFiClientSecure espClientSecure;
+#include "quickjs_esp32.h"
 
 // see platformio.ini
 #ifdef LOCAL_JAVASCRIPT
@@ -18,9 +21,6 @@ extern const char jscode_default[] asm("_binary_src_default_js_start");
 #define JSCODE_BUFFER_SIZE  10000
 char jscode[JSCODE_BUFFER_SIZE];
 unsigned long jscode_len = sizeof(jscode);
-
-WiFiClient espClient;
-WiFiClientSecure espClientSecure;
 
 void wifi_connect(const char *ssid, const char *password);
 long doHttpGet(String url, uint8_t *p_buffer, unsigned long *p_len);
