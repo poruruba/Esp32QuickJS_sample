@@ -288,7 +288,7 @@ class ESP32QuickJS {
   }
 
  protected:
- 
+
   static JSValue jsonObject2JSValue(JSContext *ctx, JsonObject obj){
     JSValue jsObject = JS_NewObject(ctx);
     for( JsonPair p : obj ){
@@ -549,7 +549,10 @@ class ESP32QuickJS {
                                func : {1, JS_CFUNC_generic, esp32_json_parse}
                              }},
         JSCFunctionListEntry{"jsonPost", 0, JS_DEF_CFUNC, 0, {
-                               func : {2, JS_CFUNC_generic, esp32_json_post}
+                               func : {2, JS_CFUNC_generic_magic, { generic_magic: esp32_json_http }}
+                             }},
+        JSCFunctionListEntry{"jsonGet", 0, JS_DEF_CFUNC, 1, {
+                               func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_json_http }}
                              }},
 #ifdef ENABLE_WIFI
         JSCFunctionListEntry{"isWifiConnected", 0, JS_DEF_CFUNC, 0, {
@@ -997,18 +1000,28 @@ class ESP32QuickJS {
     }
   }
 
-  static JSValue esp32_json_post(JSContext *ctx, JSValueConst jsThis, int argc,
-                                  JSValueConst *argv) {
+  static JSValue esp32_json_http(JSContext *ctx, JSValueConst jsThis, int argc,
+                                  JSValueConst *argv, int magic) {
     const char *url = JS_ToCString(ctx, argv[0]);
-    const char *body = JS_ToCString(ctx, argv[1]);
 
     HTTPClient http;
     if( strncmp(url, "https", 5) == 0 )
       http.begin(espClientSecure, url); //HTTPS
     else
       http.begin(espClient, url); //HTTP
-    http.addHeader("Content-Type", "application/json");
-    int status_code = http.POST((uint8_t*)body, strlen(body));
+
+    int status_code;
+    if( magic == 0 ){
+      // HTTP POST JSON
+      const char *body = JS_ToCString(ctx, argv[1]);
+      http.addHeader("Content-Type", "application/json");
+      status_code = http.POST((uint8_t*)body, strlen(body));
+      JS_FreeCString(ctx, body);
+    }else{
+      // HTTP GET
+      status_code = http.GET();
+    }
+    JS_FreeCString(ctx, url);
     
     JSValue value = JS_EXCEPTION;
     if( status_code == 200 ){
@@ -1020,7 +1033,7 @@ class ESP32QuickJS {
         Serial.print("Deserialize error: ");
         Serial.println(err.c_str());
         goto end;
-      }      
+      }
       Serial.print("memoryUsage: ");
       Serial.println(doc.memoryUsage());
 
@@ -1041,8 +1054,6 @@ class ESP32QuickJS {
     
 end:
     http.end();
-    JS_FreeCString(ctx, url);
-    JS_FreeCString(ctx, body);
     return value;
   }
 
