@@ -38,6 +38,9 @@ void setup() {
   M5Lite.begin();
   Serial.begin(9600);
 
+  M5Lite.Axp.ScreenBreath(10);
+  M5Lite.Imu.Init();
+  
   M5Lite.Lcd.setRotation(3);
   M5Lite.Lcd.fillScreen(BLACK);
   M5Lite.Lcd.setTextColor(WHITE, BLACK);
