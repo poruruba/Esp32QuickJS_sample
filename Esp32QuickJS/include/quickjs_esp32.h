@@ -287,6 +287,25 @@ class ESP32QuickJS {
     JS_FreeValue(ctx, global);
   }
 
+  int load_module(const void *buf, int buf_len, const char *filename)
+  {
+    int ret = 0;
+
+    /* for the modules, we compile then run to be able to set import.meta */
+    JSValue val = JS_Eval(this->ctx, (const char*)buf, buf_len, filename,
+                  JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+    if (!JS_IsException(val)) {
+//              js_module_set_import_meta(ctx, val, TRUE, TRUE);
+      val = JS_EvalFunction(this->ctx, val);
+    }
+    if (JS_IsException(val)) {
+      qjs_dump_exception(this->ctx, val);
+      ret = -1;
+    }
+    JS_FreeValue(this->ctx, val);
+    return ret;
+  }
+
  protected:
 
   static JSValue jsonObject2JSValue(JSContext *ctx, JsonObject obj){
