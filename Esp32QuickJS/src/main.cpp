@@ -1,12 +1,14 @@
 #include <WiFi.h>
 #include "M5Lite.h"
+#include <ArduinoJson.h>
 #include <HTTPClient.h>
 
 //#define LOCAL_JAVASCRIPT  // ROMに埋め込む場合にはコメントアウトを外す
 
 const char *wifi_ssid = "【WiFiアクセスポイントのSSID】";
 const char *wifi_password = "【WiFiアクセスポイントのパスワード";
-const char *jscode_url = "【Javascriptの取得先URL】";
+const char *jscode_modules_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/modules.json";
+const char *jscode_main_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/main_modules.js";
 
 WiFiClient espClient;
 WiFiClientSecure espClientSecure;
@@ -15,12 +17,16 @@ WiFiClientSecure espClientSecure;
 // see platformio.ini
 #ifdef LOCAL_JAVASCRIPT
 extern const char jscode_main[] asm("_binary_src_main_js_start");
+extern const char jscode_fib[] asm("_binary_src_fib_js_start");
+extern const char jscode_math[] asm("_binary_src_math_js_start");
 #else
 extern const char jscode_default[] asm("_binary_src_default_js_start");
 
 #define JSCODE_BUFFER_SIZE  10000
 char jscode[JSCODE_BUFFER_SIZE];
-unsigned long jscode_len = sizeof(jscode);
+#define JSDOCUMENT_MODULES_SIZE  1000
+char modules_buffer[1000];
+char load_buffer[20000];
 
 void wifi_connect(const char *ssid, const char *password);
 long doHttpGet(String url, uint8_t *p_buffer, unsigned long *p_len);
@@ -39,19 +45,68 @@ void setup() {
 
 #ifdef LOCAL_JAVASCRIPT
   qjs.begin();
+
+  qjs.load_module(jscode_fib, strlen(jscode_fib), "fib.js");
+  qjs.load_module(jscode_math, strlen(jscode_math), "math.js");
+
   qjs.exec(jscode_main);
 #else
   wifi_connect(wifi_ssid, wifi_password);
 
+  qjs.begin();
+
+  bool success = false;
+  while(true){
   long ret;
-  ret = doHttpGet(jscode_url, (uint8_t*)jscode, &jscode_len);
-  if( ret == 0 ){
+    unsigned long modules_len = sizeof(modules_buffer);
+    ret = doHttpGet(jscode_modules_url, (uint8_t*)modules_buffer, &modules_len);
+    if( ret != 0 ){
+      Serial.println("modules.json get error");
+      break;
+    }
+    
+    DynamicJsonDocument doc(JSDOCUMENT_MODULES_SIZE);
+    DeserializationError err = deserializeJson(doc, modules_buffer, modules_len);
+    if( err ){
+      Serial.print("Deserialize error: ");
+      Serial.println(err.c_str());
+      break;
+    }
+
+    unsigned long load_buffer_len = 0;
+    JsonArray array = doc.as<JsonArray>();
+    for( JsonVariant val : array ){
+      const char *url = val["url"];
+      const char *name = val["name"];
+      
+      unsigned long buffer_len = sizeof(load_buffer) - load_buffer_len;
+      long ret = doHttpGet(url, (uint8_t*)&load_buffer[load_buffer_len], &buffer_len);
+      if( ret != 0 ){
+        Serial.println("module get error");
+        break;
+      }
+      load_buffer[load_buffer_len + buffer_len] = '\0';
+
+      Serial.println(name);
+      qjs.load_module(&load_buffer[load_buffer_len], buffer_len, name);
+      load_buffer_len += buffer_len + 1;
+    }
+
+    unsigned long jscode_len = sizeof(jscode);
+    ret = doHttpGet(jscode_main_url, (uint8_t*)jscode, &jscode_len);
+    if( ret != 0 ){
+      Serial.println("main.js get error");
+      break;
+    }
     jscode[jscode_len] = '\0';
 
-    qjs.begin();
+    success = true;
+    break;
+  }
+
+  if( success ){
     qjs.exec(jscode);
   }else{
-    qjs.begin();
     qjs.exec(jscode_default);
   }
 #endif
@@ -89,6 +144,7 @@ void wifi_connect(const char *ssid, const char *password){
 }
 
 long doHttpGet(String url, uint8_t *p_buffer, unsigned long *p_len){
+  Serial.println(url);
   HTTPClient http;
 
   Serial.print("[HTTP] GET begin...\n");
