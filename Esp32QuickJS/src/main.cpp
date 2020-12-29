@@ -43,6 +43,8 @@ void setup() {
   M5Lite.Lcd.setTextColor(WHITE, BLACK);
   M5Lite.Lcd.println("[M5StickC]");
 
+  wifi_connect(wifi_ssid, wifi_password);
+
 #ifdef LOCAL_JAVASCRIPT
   qjs.begin();
 
@@ -51,8 +53,6 @@ void setup() {
 
   qjs.exec(jscode_main);
 #else
-  wifi_connect(wifi_ssid, wifi_password);
-
   qjs.begin();
 
   bool success = false;
