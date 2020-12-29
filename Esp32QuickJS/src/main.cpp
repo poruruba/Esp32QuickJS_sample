@@ -6,7 +6,7 @@
 //#define LOCAL_JAVASCRIPT  // ROMに埋め込む場合にはコメントアウトを外す
 
 const char *wifi_ssid = "【WiFiアクセスポイントのSSID】";
-const char *wifi_password = "【WiFiアクセスポイントのパスワード";
+const char *wifi_password = "【WiFiアクセスポイントのパスワード】";
 const char *jscode_modules_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/modules.json";
 const char *jscode_main_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/main_modules.js";
 
