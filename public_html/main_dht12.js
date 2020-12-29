@@ -85,15 +85,20 @@ class DHT12{
 wire.begin();
 var dht12 = new DHT12(wire);
 lcd.println("DHT12 start");
+lcd.setTextSize(3);
 
 setInterval(async () =>{
-	try{
+  try{
 	  console.log('interval');
 	  led = !led;
 	  gpio.digitalWrite(10, led ? gpio.LOW : gpio.HIGH);
 
 	  var temp = await dht12.readTemperature();
 	  console.log(temp);
+	  lcd.setCursor(0, 40);
+	  lcd.print("     ");
+	  lcd.setCursor(0, 40);
+	  lcd.print(temp);
   }catch(error){
   	console.log(error);
   }
