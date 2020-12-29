@@ -449,6 +449,44 @@ class ESP32QuickJS {
             }},
     };
 
+    static const JSCFunctionListEntry imu_funcs[] = {
+        JSCFunctionListEntry{
+            "getAccelData", 0, JS_DEF_CFUNC, 0, {
+              func : {0, JS_CFUNC_generic, esp32_imu_getAccelData}
+            }},
+        JSCFunctionListEntry{
+            "getGyroData", 0, JS_DEF_CFUNC, 0, {
+              func : {0, JS_CFUNC_generic, esp32_imu_getGyroData}
+            }},
+        JSCFunctionListEntry{
+            "getTempData", 0, JS_DEF_CFUNC, 0, {
+              func : {0, JS_CFUNC_generic, esp32_imu_getTempData}
+            }},
+    };
+
+    static const JSCFunctionListEntry rtc_funcs[] = {
+        JSCFunctionListEntry{
+            "begin", 0, JS_DEF_CFUNC, 0, {
+              func : {0, JS_CFUNC_generic, esp32_rtc_begin}
+            }},
+        JSCFunctionListEntry{
+            "SetTime", 0, JS_DEF_CFUNC, 0, {
+              func : {3, JS_CFUNC_generic, esp32_rtc_SetTime}
+            }},
+        JSCFunctionListEntry{
+            "SetData", 0, JS_DEF_CFUNC, 0, {
+              func : {4, JS_CFUNC_generic, esp32_rtc_SetData}
+            }},
+        JSCFunctionListEntry{
+            "GetTime", 0, JS_DEF_CFUNC, 0, {
+              func : {0, JS_CFUNC_generic, esp32_rtc_GetTime}
+            }},
+        JSCFunctionListEntry{
+            "GetData", 0, JS_DEF_CFUNC, 0, {
+              func : {0, JS_CFUNC_generic, esp32_rtc_GetData}
+            }},
+    };
+
     static const JSCFunctionListEntry wire_funcs[] = {
         JSCFunctionListEntry{"begin", 0, JS_DEF_CFUNC, 0, {
                                func : {0, JS_CFUNC_generic_magic, { generic_magic: esp32_wire_begin }}
@@ -641,7 +679,29 @@ class ESP32QuickJS {
       JS_AddModuleExportList(
           ctx, mod, lcd_funcs,
           sizeof(lcd_funcs) / sizeof(JSCFunctionListEntry));
-    } 
+    }
+
+    mod = JS_NewCModule(ctx, "imu", [](JSContext *ctx, JSModuleDef *m) {
+          return JS_SetModuleExportList(
+              ctx, m, imu_funcs,
+              sizeof(imu_funcs) / sizeof(JSCFunctionListEntry));
+        });
+    if (mod) {
+      JS_AddModuleExportList(
+          ctx, mod, imu_funcs,
+          sizeof(imu_funcs) / sizeof(JSCFunctionListEntry));
+    }
+
+    mod = JS_NewCModule(ctx, "rtc", [](JSContext *ctx, JSModuleDef *m) {
+          return JS_SetModuleExportList(
+              ctx, m, rtc_funcs,
+              sizeof(rtc_funcs) / sizeof(JSCFunctionListEntry));
+        });
+    if (mod) {
+      JS_AddModuleExportList(
+          ctx, mod, rtc_funcs,
+          sizeof(rtc_funcs) / sizeof(JSCFunctionListEntry));
+    }
 #else
     // import * as esp32 from "esp32";
     JSValue esp32 = JS_NewObject(ctx);
@@ -728,6 +788,94 @@ class ESP32QuickJS {
     JS_ToUint32(ctx, &value, argv[1]);
     digitalWrite(pin, value);
     return JS_UNDEFINED;
+  }
+
+  static JSValue esp32_imu_getAccelData(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    JSValue obj = JS_NewObject(ctx);
+    float ax, ay, az;
+    M5Lite.Imu.getAccelData(&ax, &ay, &az);
+    JS_SetPropertyStr(ctx, obj, "x", JS_NewFloat64(ctx, ax));
+    JS_SetPropertyStr(ctx, obj, "y", JS_NewFloat64(ctx, ay));
+    JS_SetPropertyStr(ctx, obj, "z", JS_NewFloat64(ctx, az));
+    return obj;
+  }
+
+  static JSValue esp32_imu_getGyroData(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    JSValue obj = JS_NewObject(ctx);
+    float gx, gy, gz;
+    M5Lite.Imu.getGyroData(&gx, &gy, &gz);
+    JS_SetPropertyStr(ctx, obj, "x", JS_NewFloat64(ctx, gx));
+    JS_SetPropertyStr(ctx, obj, "y", JS_NewFloat64(ctx, gy));
+    JS_SetPropertyStr(ctx, obj, "z", JS_NewFloat64(ctx, gz));
+    return obj;
+  }
+
+  static JSValue esp32_imu_getTempData(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    float t;
+    M5Lite.Imu.getTempData(&t);
+    return JS_NewFloat64(ctx, t);
+  }
+
+  static JSValue esp32_rtc_begin(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    M5Lite.Rtc.begin();
+    return JS_UNDEFINED;
+  }
+
+  static JSValue esp32_rtc_SetTime(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    uint32_t hours, minutes, seconds;
+    JS_ToUint32(ctx, &hours, argv[0]);
+    JS_ToUint32(ctx, &minutes, argv[1]);
+    JS_ToUint32(ctx, &seconds, argv[2]);
+    RTC_TimeTypeDef def;
+    def.Hours = hours;
+    def.Minutes = minutes;
+    def.Seconds = seconds;
+    M5Lite.Rtc.SetTime(&def);
+    return JS_UNDEFINED;
+  }
+
+  static JSValue esp32_rtc_SetData(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    uint32_t year, month, date, weekday;
+    JS_ToUint32(ctx, &year, argv[0]);
+    JS_ToUint32(ctx, &month, argv[1]);
+    JS_ToUint32(ctx, &date, argv[2]);
+    JS_ToUint32(ctx, &weekday, argv[3]);
+    RTC_DateTypeDef def;
+    def.Year = year;
+    def.Month = month;
+    def.Date = date;
+    def.WeekDay = weekday;
+    M5Lite.Rtc.SetData(&def);
+    return JS_UNDEFINED;
+  }
+
+  static JSValue esp32_rtc_GetTime(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    RTC_TimeTypeDef def;
+    M5Lite.Rtc.GetTime(&def);
+    JSValue obj = JS_NewObject(ctx);
+    JS_SetPropertyStr(ctx, obj, "Hours", JS_NewUint32(ctx, def.Hours));
+    JS_SetPropertyStr(ctx, obj, "Minutes", JS_NewUint32(ctx, def.Minutes));
+    JS_SetPropertyStr(ctx, obj, "Seconds", JS_NewUint32(ctx, def.Seconds));
+    return obj;
+  }
+
+  static JSValue esp32_rtc_GetData(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    RTC_DateTypeDef def;
+    M5Lite.Rtc.GetData(&def);
+    JSValue obj = JS_NewObject(ctx);
+    JS_SetPropertyStr(ctx, obj, "Year", JS_NewUint32(ctx, def.Year));
+    JS_SetPropertyStr(ctx, obj, "Month", JS_NewUint32(ctx, def.Month));
+    JS_SetPropertyStr(ctx, obj, "Date", JS_NewUint32(ctx, def.Date));
+    JS_SetPropertyStr(ctx, obj, "WeekDay", JS_NewUint32(ctx, def.WeekDay));
+    return obj;
   }
 
   static JSValue esp32_wire_begin(JSContext *ctx, JSValueConst jsThis,
