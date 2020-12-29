@@ -851,7 +851,7 @@ class ESP32QuickJS {
       JSValue array = JS_NewArray(ctx);
       for( uint32_t i = 0 ; i < value ; i++ ){
         int c = wire->read();
-        JS_SetPropertyUint32(ctx, array, i, c);
+        JS_SetPropertyUint32(ctx, array, i, JS_NewUint32(ctx, c));
       }
       return array;
     }else{
