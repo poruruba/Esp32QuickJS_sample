@@ -561,6 +561,9 @@ class ESP32QuickJS {
         JSCFunctionListEntry{"restart", 0, JS_DEF_CFUNC, 0, {
                                func : {1, JS_CFUNC_generic, esp32_restart}
                              }},
+        JSCFunctionListEntry{"delay", 0, JS_DEF_CFUNC, 0, {
+                               func : {1, JS_CFUNC_generic, esp32_delay}
+                             }},
         JSCFunctionListEntry{"setLoop", 0, JS_DEF_CFUNC, 0, {
                                func : {1, JS_CFUNC_generic, esp32_set_loop}
                              }},
@@ -708,7 +711,7 @@ class ESP32QuickJS {
                                          int argc, JSValueConst *argv) {
     uint32_t pin;
     JS_ToUint32(ctx, &pin, argv[0]);
-    return JS_NewUint32(ctx, digitalRead(pin));
+    return JS_NewInt32(ctx, digitalRead(pin));
   }
 
   static JSValue esp32_gpio_analog_read(JSContext *ctx, JSValueConst jsThis,
@@ -802,7 +805,7 @@ class ESP32QuickJS {
     if( tag == JS_TAG_INT ){
       uint32_t value;
       JS_ToUint32(ctx, &value, argv[0]);
-      return JS_NewUint32(ctx, wire->write((uint8_t)value));
+      return JS_NewInt32(ctx, wire->write((uint8_t)value));
     }else{
       JSValue jv = JS_GetPropertyStr(ctx, argv[0], "length");
       uint32_t length;
@@ -818,7 +821,7 @@ class ESP32QuickJS {
           return JS_EXCEPTION;
       }
 
-      return JS_NewUint32(ctx, length); 
+      return JS_NewInt32(ctx, length); 
     }
   }
 
@@ -832,7 +835,7 @@ class ESP32QuickJS {
     else
       return JS_EXCEPTION;
 
-    return JS_NewUint32(ctx, wire->available());
+    return JS_NewInt32(ctx, wire->available());
   }
 
   static JSValue esp32_wire_read(JSContext *ctx, JSValueConst jsThis,
@@ -851,18 +854,18 @@ class ESP32QuickJS {
       JSValue array = JS_NewArray(ctx);
       for( uint32_t i = 0 ; i < value ; i++ ){
         int c = wire->read();
-        JS_SetPropertyUint32(ctx, array, i, JS_NewUint32(ctx, c));
+        JS_SetPropertyUint32(ctx, array, i, JS_NewInt32(ctx, c));
       }
       return array;
     }else{
-      return JS_NewUint32(ctx, wire->read());
+      return JS_NewInt32(ctx, wire->read());
     }
   }
 
   static JSValue esp32_lcd_setRotation(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value;
-    JS_ToUint32(ctx, &value, argv[0]);
+    int32_t value;
+    JS_ToInt32(ctx, &value, argv[0]);
     M5Lite.Lcd.setRotation(value);
     return JS_UNDEFINED;
   }
@@ -886,8 +889,8 @@ class ESP32QuickJS {
 
   static JSValue esp32_lcd_setTextSize(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value;
-    JS_ToUint32(ctx, &value, argv[0]);
+    double value;
+    JS_ToFloat64(ctx, &value, argv[0]);
     M5Lite.Lcd.setTextSize(value);
     return JS_UNDEFINED;
   }
@@ -910,50 +913,50 @@ class ESP32QuickJS {
 
   static JSValue esp32_lcd_setCursor(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value0;
-    uint32_t value1;
-    JS_ToUint32(ctx, &value0, argv[0]);
-    JS_ToUint32(ctx, &value1, argv[1]);
+    int32_t value0;
+    int32_t value1;
+    JS_ToInt32(ctx, &value0, argv[0]);
+    JS_ToInt32(ctx, &value1, argv[1]);
     M5Lite.Lcd.setCursor(value0, value1);
     return JS_UNDEFINED;
   }
 
   static JSValue esp32_lcd_drawPixel(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value0;
-    uint32_t value1;
-    uint32_t value2;
-    JS_ToUint32(ctx, &value0, argv[0]);
-    JS_ToUint32(ctx, &value1, argv[1]);
-    JS_ToUint32(ctx, &value2, argv[2]);
+    int32_t value0;
+    int32_t value1;
+    int32_t value2;
+    JS_ToInt32(ctx, &value0, argv[0]);
+    JS_ToInt32(ctx, &value1, argv[1]);
+    JS_ToInt32(ctx, &value2, argv[2]);
     M5Lite.Lcd.drawPixel(value0, value1, value2);
     return JS_UNDEFINED;
   }
 
   static JSValue esp32_lcd_drawLine(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    uint32_t value0;
-    uint32_t value1;
-    uint32_t value2;
-    uint32_t value3;
-    uint32_t value4;
-    JS_ToUint32(ctx, &value0, argv[0]);
-    JS_ToUint32(ctx, &value1, argv[1]);
-    JS_ToUint32(ctx, &value2, argv[2]);
-    JS_ToUint32(ctx, &value3, argv[3]);
-    JS_ToUint32(ctx, &value4, argv[4]);
+    int32_t value0;
+    int32_t value1;
+    int32_t value2;
+    int32_t value3;
+    int32_t value4;
+    JS_ToInt32(ctx, &value0, argv[0]);
+    JS_ToInt32(ctx, &value1, argv[1]);
+    JS_ToInt32(ctx, &value2, argv[2]);
+    JS_ToInt32(ctx, &value3, argv[3]);
+    JS_ToInt32(ctx, &value4, argv[4]);
     M5Lite.Lcd.drawLine(value0, value1, value2, value3, value4);
     return JS_UNDEFINED;
   }
 
   static JSValue esp32_lcd_getWidth(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    return JS_NewUint32(ctx, M5Lite.Lcd.width());
+    return JS_NewInt32(ctx, M5Lite.Lcd.width());
   }
 
   static JSValue esp32_lcd_getHeight(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    return JS_NewUint32(ctx, M5Lite.Lcd.height());
+    return JS_NewInt32(ctx, M5Lite.Lcd.height());
   }
 
   static JSValue esp32_lcd_getDepth(JSContext *ctx, JSValueConst jsThis,
@@ -978,6 +981,14 @@ class ESP32QuickJS {
   static JSValue esp32_restart(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
     ESP.restart();
+    return JS_UNDEFINED;
+  }
+
+  static JSValue esp32_delay(JSContext *ctx, JSValueConst jsThis,
+                                          int argc, JSValueConst *argv) {
+    uint32_t value;
+    JS_ToUint32(ctx, &value, argv[0]);
+    delay(value);
     return JS_UNDEFINED;
   }
 
