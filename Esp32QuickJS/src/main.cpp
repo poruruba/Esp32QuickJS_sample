@@ -28,9 +28,9 @@ char jscode[JSCODE_BUFFER_SIZE];
 char modules_buffer[1000];
 char load_buffer[20000];
 
-void wifi_connect(const char *ssid, const char *password);
 long doHttpGet(String url, uint8_t *p_buffer, unsigned long *p_len);
 #endif
+void wifi_connect(const char *ssid, const char *password);
 
 ESP32QuickJS qjs;
 
