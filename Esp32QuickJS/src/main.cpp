@@ -60,41 +60,44 @@ void setup() {
 
   bool success = false;
   while(true){
-  long ret;
+    long ret;
     unsigned long modules_len = sizeof(modules_buffer);
     ret = doHttpGet(jscode_modules_url, (uint8_t*)modules_buffer, &modules_len);
     if( ret != 0 ){
       Serial.println("modules.json get error");
-      break;
-    }
-    
-    DynamicJsonDocument doc(JSDOCUMENT_MODULES_SIZE);
-    DeserializationError err = deserializeJson(doc, modules_buffer, modules_len);
-    if( err ){
-      Serial.print("Deserialize error: ");
-      Serial.println(err.c_str());
-      break;
-    }
-
-    unsigned long load_buffer_len = 0;
-    JsonArray array = doc.as<JsonArray>();
-    for( JsonVariant val : array ){
-      const char *url = val["url"];
-      const char *name = val["name"];
-      
-      unsigned long buffer_len = sizeof(load_buffer) - load_buffer_len;
-      long ret = doHttpGet(url, (uint8_t*)&load_buffer[load_buffer_len], &buffer_len);
-      if( ret != 0 ){
-        Serial.println("module get error");
+    }else{
+      DynamicJsonDocument doc(JSDOCUMENT_MODULES_SIZE);
+      DeserializationError err = deserializeJson(doc, modules_buffer, modules_len);
+      if( err ){
+        Serial.print("Deserialize error: ");
+        Serial.println(err.c_str());
         break;
       }
-      load_buffer[load_buffer_len + buffer_len] = '\0';
 
-      Serial.println(name);
-      qjs.load_module(&load_buffer[load_buffer_len], buffer_len, name);
-      load_buffer_len += buffer_len + 1;
+      unsigned long load_buffer_len = 0;
+      JsonArray array = doc.as<JsonArray>();
+      for( JsonVariant val : array ){
+        const char *url = val["url"];
+        const char *name = val["name"];
+        
+        unsigned long buffer_len = sizeof(load_buffer) - load_buffer_len;
+        long ret = doHttpGet(url, (uint8_t*)&load_buffer[load_buffer_len], &buffer_len);
+        if( ret != 0 ){
+          Serial.println("module get error");
+          break;
+        }
+        if( (load_buffer_len + buffer_len + 1) > sizeof(load_buffer) ){
+          Serial.println("load_buffer size over");
+          break;
+        }
+        load_buffer[load_buffer_len + buffer_len] = '\0';
+
+        Serial.println(name);
+        qjs.load_module(&load_buffer[load_buffer_len], buffer_len, name);
+        load_buffer_len += buffer_len + 1;
+      }
     }
-
+    
     unsigned long jscode_len = sizeof(jscode);
     ret = doHttpGet(jscode_main_url, (uint8_t*)jscode, &jscode_len);
     if( ret != 0 ){
