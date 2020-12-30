@@ -128,7 +128,6 @@ void loop() {
   }
 }
 
-#ifndef LOCAL_JAVASCRIPT
 void wifi_connect(const char *ssid, const char *password){
   Serial.println("");
   Serial.print("WiFi Connenting");
@@ -149,6 +148,7 @@ void wifi_connect(const char *ssid, const char *password){
   M5Lite.Lcd.println(WiFi.localIP());
 }
 
+#ifndef LOCAL_JAVASCRIPT
 long doHttpGet(String url, uint8_t *p_buffer, unsigned long *p_len){
   Serial.println(url);
   HTTPClient http;
