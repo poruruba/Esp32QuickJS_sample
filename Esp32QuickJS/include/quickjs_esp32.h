@@ -303,6 +303,14 @@ class ESP32QuickJS {
       ret = -1;
     }
     JS_FreeValue(this->ctx, val);
+
+    // JSMemoryUsage usage;
+    // JS_ComputeMemoryUsage(this->rt, &usage);
+    // Serial.printf("malloc_size=%ld, malloc_limit=%ld, memory_usage_size=%ld\n", usage.malloc_size, usage.malloc_limit, usage.memory_used_size);
+
+    // uint32_t size = ESP.getFreeHeap();
+    // Serial.printf("FreeHeap=%d\n", size);
+
     return ret;
   }
 
@@ -609,10 +617,10 @@ class ESP32QuickJS {
                                func : {1, JS_CFUNC_generic, esp32_json_parse}
                              }},
         JSCFunctionListEntry{"jsonPost", 0, JS_DEF_CFUNC, 0, {
-                               func : {2, JS_CFUNC_generic_magic, { generic_magic: esp32_json_http }}
+                               func : {3, JS_CFUNC_generic_magic, { generic_magic: esp32_json_http }}
                              }},
         JSCFunctionListEntry{"jsonGet", 0, JS_DEF_CFUNC, 1, {
-                               func : {1, JS_CFUNC_generic_magic, { generic_magic: esp32_json_http }}
+                               func : {2, JS_CFUNC_generic_magic, { generic_magic: esp32_json_http }}
                              }},
 #ifdef ENABLE_WIFI
         JSCFunctionListEntry{"isWifiConnected", 0, JS_DEF_CFUNC, 0, {
@@ -1182,6 +1190,7 @@ class ESP32QuickJS {
                                   JSValueConst *argv, int magic) {
     const char *url = JS_ToCString(ctx, argv[0]);
 
+    bool isJsonResponse = true;
     HTTPClient http;
     if( strncmp(url, "https", 5) == 0 )
       http.begin(espClientSecure, url); //HTTPS
@@ -1191,40 +1200,49 @@ class ESP32QuickJS {
     int status_code;
     if( magic == 0 ){
       // HTTP POST JSON
+      if( argc >= 3 )
+        isJsonResponse = JS_ToBool(ctx, argv[2]);
       const char *body = JS_ToCString(ctx, argv[1]);
       http.addHeader("Content-Type", "application/json");
       status_code = http.POST((uint8_t*)body, strlen(body));
       JS_FreeCString(ctx, body);
     }else{
       // HTTP GET
+      if( argc >= 2 )
+        isJsonResponse = JS_ToBool(ctx, argv[1]);
       status_code = http.GET();
     }
     JS_FreeCString(ctx, url);
     
     JSValue value = JS_EXCEPTION;
     if( status_code == 200 ){
-      Stream* resp = http.getStreamPtr();
+      if( isJsonResponse ){
+        Stream* resp = http.getStreamPtr();
 
-      DynamicJsonDocument doc(JSDOCUMENT_BUFFER_SIZE);
-      DeserializationError err = deserializeJson(doc, *resp);
-      if( err ){
-        Serial.print("Deserialize error: ");
-        Serial.println(err.c_str());
-        goto end;
-      }
-      Serial.print("memoryUsage: ");
-      Serial.println(doc.memoryUsage());
+        DynamicJsonDocument doc(JSDOCUMENT_BUFFER_SIZE);
+        DeserializationError err = deserializeJson(doc, *resp);
+        if( err ){
+          Serial.print("Deserialize error: ");
+          Serial.println(err.c_str());
+          goto end;
+        }
+        Serial.print("memoryUsage: ");
+        Serial.println(doc.memoryUsage());
 
-      if( doc.is<JsonObject>() ){
-        JsonObject obj = doc.as<JsonObject>();
-        value = jsonObject2JSValue(ctx, obj);
-        goto end;
-      }else if( doc.is<JsonArray>() ){
-        JsonArray array = doc.as<JsonArray>();
-        value = jsonArray2JSValue(ctx, array);
-        goto end;
+        if( doc.is<JsonObject>() ){
+          JsonObject obj = doc.as<JsonObject>();
+          value = jsonObject2JSValue(ctx, obj);
+          goto end;
+        }else if( doc.is<JsonArray>() ){
+          JsonArray array = doc.as<JsonArray>();
+          value = jsonArray2JSValue(ctx, array);
+          goto end;
+        }else{
+          goto end;
+        }
       }else{
-        goto end;
+        String result = http.getString();
+        value = JS_NewString(ctx, result.c_str());
       }
     }else{
         goto end;
