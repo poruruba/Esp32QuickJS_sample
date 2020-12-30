@@ -7,8 +7,8 @@
 
 const char *wifi_ssid = "【WiFiアクセスポイントのSSID】";
 const char *wifi_password = "【WiFiアクセスポイントのパスワード】";
-const char *jscode_modules_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/modules.json"; //【Javascriptの取得先URL】
-const char *jscode_main_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/main_modules.js"; //【モジュールJsonの取得先URL】
+const char *jscode_modules_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/modules.json"; //【モジュールJsonの取得先URL】
+const char *jscode_main_url = "https://raw.githubusercontent.com/poruruba/Esp32QuickJS_sample/main/public_html/main_modules.js"; //【Javascriptの取得先URL】
 
 WiFiClient espClient;
 WiFiClientSecure espClientSecure;
