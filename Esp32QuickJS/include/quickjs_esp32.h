@@ -1122,9 +1122,10 @@ class ESP32QuickJS {
 
   static JSValue esp32_lcd_fillScreen(JSContext *ctx, JSValueConst jsThis,
                                           int argc, JSValueConst *argv) {
-    M5Lite.Lcd.fillScreen();
+    uint32_t value;
+    JS_ToUint32(ctx, &value, argv[0]);
+    M5.Lcd.fillScreen(value);
     return JS_UNDEFINED;
-  }
 
   static JSValue esp32_deep_sleep(JSContext *ctx, JSValueConst jsThis, int argc,
                                   JSValueConst *argv) {
