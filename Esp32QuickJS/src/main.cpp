@@ -205,6 +205,9 @@ long doHttpGet(String url, uint8_t *p_buffer, unsigned long *p_len){
             }
             delay(1);
         }
+      }else{
+        http.end();
+        return -1;
       }
   } else {
     Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
