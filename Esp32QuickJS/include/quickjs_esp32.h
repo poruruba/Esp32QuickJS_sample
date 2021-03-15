@@ -231,6 +231,9 @@ class ESP32QuickJS {
   }
 
   void end() {
+    if( JS_IsFunction(ctx, loop_func) )
+      JS_FreeValue(ctx, loop_func);
+    
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
   }
